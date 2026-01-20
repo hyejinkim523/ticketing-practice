@@ -69,6 +69,11 @@ button:disabled {
     cursor: not-allowed;
 }
 
+/* ===== 대기 화면 위치 조정 (보너스 타입) ===== */
+#waiting {
+    margin-top: 300px;
+}
+
 /* ===== 구역 맵 ===== */
 .zone-map {
     text-align: center;
@@ -148,14 +153,28 @@ button:disabled {
 <div id="zonePage" class="hidden zone-map">
     <div class="stage-map">STAGE</div>
 
+    <!-- 앞 구역 -->
     <div class="zone-row">
-        <div class="zone zone-a" onclick="enterZone('A')">A</div>
-        <div class="zone zone-b" onclick="enterZone('B')">B</div>
+        <div class="zone zone-a" onclick="enterZone('A1')">A1</div>
+        <div class="zone zone-a" onclick="enterZone('A2')">A2</div>
+        <div class="zone zone-a" onclick="enterZone('A3')">A3</div>
+        <div class="zone zone-a" onclick="enterZone('A4')">A4</div>
     </div>
 
+    <!-- 중간 구역 -->
     <div class="zone-row">
-        <div class="zone zone-c" onclick="enterZone('C')">C</div>
-        <div class="zone zone-d" onclick="enterZone('D')">D</div>
+        <div class="zone zone-b" onclick="enterZone('B1')">B1</div>
+        <div class="zone zone-b" onclick="enterZone('B2')">B2</div>
+        <div class="zone zone-b" onclick="enterZone('B3')">B3</div>
+        <div class="zone zone-b" onclick="enterZone('B4')">B4</div>
+    </div>
+
+    <!-- 뒤 구역 -->
+    <div class="zone-row">
+        <div class="zone zone-c" onclick="enterZone('C1')">C1</div>
+        <div class="zone zone-c" onclick="enterZone('C2')">C2</div>
+        <div class="zone zone-c" onclick="enterZone('C3')">C3</div>
+        <div class="zone zone-c" onclick="enterZone('C4')">C4</div>
     </div>
 </div>
 
@@ -303,12 +322,17 @@ function initSeats(zone) {
     countText.innerText = 0;
     document.getElementById("confirmBtn").disabled = true;
 
-    let seatCount = 0;
+let seatCount = 0;
 
-    if (zone === "A") seatCount = 600;
-    if (zone === "B") seatCount = 500;
-    if (zone === "C") seatCount = 400;
-    if (zone === "D") seatCount = 300;
+// 앞 구역 (A1~A4)
+if (zone.startsWith("A")) seatCount = 700;
+
+// 중간 구역 (B1~B4)
+if (zone.startsWith("B")) seatCount = 500;
+
+// 뒤 구역 (C1~C4)
+if (zone.startsWith("C")) seatCount = 350;
+
 
     for (let i = 0; i < seatCount; i++) {
         const seat = document.createElement("div");
