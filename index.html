@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>인터파크 티켓팅 연습</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f6f7;
+}
+.container {
+    width: 900px;
+    margin: 30px auto;
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+}
+.stage {
+    text-align: center;
+    background: #ddd;
+    padding: 5px;
+    margin-bottom: 15px;
+}
+.hidden {
+    display: none;
+}
+.seat-area {
+    display: grid;
+    grid-template-columns: repeat(25, 28px);
+    gap: 4px;
+    justify-content: center;
+    user-select: none;
+}
+.seat {
+    width: 30px;
+    height: 30px;
+    background: #cce0ff;
+    border: 1px solid #4a6fa5;
+    cursor: pointer;
+}
+.seat.selected {
+    background: #ff5b5b;
+}
+.seat.occupied {
+    background: #888;
+    cursor: not-allowed;
+}
+.timer {
+    font-weight: bold;
+    color: red;
+}
+.center {
+    text-align: center;
+    margin-top: 20px;
+}
+input {
+    padding: 5px;
+    font-size: 16px;
+}
+button {
+    padding: 8px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* ===== 구역 맵 ===== */
+.zone-map {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.stage-map {
+    width: 320px;
+    margin: 0 auto 25px;
+    padding: 12px 0;
+    background: #ccc;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.zone-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 25px;
+}
+
+.zone {
+    width: 140px;
+    height: 90px;
+    background: #6fa8dc;
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+}
+
+.zone:hover {
+    background: #3d85c6;
+    transform: scale(1.05);
+}
+
+/* 구역별 색 살짝 차이 */
+.zone-a { background: #6fa8dc; }
+.zone-b { background: #5b9bd5; }
+.zone-c { background: #4a86c5; }
+.zone-d { background: #3d73b9; }
+
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <!-- 시작 대기 -->
+    <div id="waiting">
+        <div class="center">
+            ⏳ 예매 시작까지 남은 시간  
+            <div class="timer"><span id="waitTime">10</span>초</div>
+        </div>
+        <div class="center">
+            <button id="startBtn" disabled>예매 시작</button>
+        </div>
+    </div>
+
+    <!-- 문자 입력 -->
+    <div id="captcha" class="hidden center">
+        <p>아래 문자를 입력하세요</p>
+        <h2 id="captchaText"></h2>
+        <input type="text" id="captchaInput" maxlength="6" style="text-transform: uppercase;">
+        <br><br>
+        <button onclick="checkCaptcha()">확인</button>
+    </div>
+
+    <!-- 좌석 선택 -->
+    <!-- 구역 선택 -->
+<div id="zonePage" class="hidden zone-map">
+    <div class="stage-map">STAGE</div>
+
+    <div class="zone-row">
+        <div class="zone zone-a" onclick="enterZone('A')">A</div>
+        <div class="zone zone-b" onclick="enterZone('B')">B</div>
+    </div>
+
+    <div class="zone-row">
+        <div class="zone zone-c" onclick="enterZone('C')">C</div>
+        <div class="zone zone-d" onclick="enterZone('D')">D</div>
+    </div>
+</div>
+
+
+<!-- 좌석 선택 -->
+<div id="seatPage" class="hidden">
+    <div class="stage">STAGE</div>
+    <div class="center"><strong id="zoneTitle"></strong></div>
+    <br>
+    <div class="seat-area" id="seatArea"></div>
+    <div class="center">
+        선택 좌석: <span id="count">0</span> / 2
+    </div>
+</div>
+
+
+<script>
+/* ================= 대기 타이머 ================= */
+let wait = 10;
+const waitTime = document.getElementById("waitTime");
+const startBtn = document.getElementById("startBtn");
+
+const waitTimer = setInterval(() => {
+    waitTime.innerText = wait;
+
+    if (wait < 0) {
+        clearInterval(waitTimer);
+        startBtn.disabled = false;
+        waitTime.innerText = 0;
+        return;
+    }
+
+    wait--;
+}, 1000);
+
+startBtn.onclick = () => {
+    document.getElementById("waiting").classList.add("hidden");
+    document.getElementById("captcha").classList.remove("hidden");
+    generateCaptcha();
+};
+
+/* ================= 문자 입력 ================= */
+let captchaAnswer = "";
+
+function generateCaptcha() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    captchaAnswer = "";
+    for (let i = 0; i < 6; i++) {
+        const randomIndex = Math.floor(Math.random() * chars.length);
+        captchaAnswer += chars[randomIndex];
+    }
+    document.getElementById("captchaText").innerText = captchaAnswer;
+}
+
+function checkCaptcha() {
+    const input = document.getElementById("captchaInput").value.toUpperCase();
+    if (input === captchaAnswer) {
+        document.getElementById("captcha").classList.add("hidden");
+        document.getElementById("zonePage").classList.remove("hidden");
+
+    } else {
+        alert("보안코드가 틀렸습니다!");
+        document.getElementById("captchaInput").value = "";
+        generateCaptcha(); // 틀리면 새 코드
+    }
+}
+
+
+document.getElementById("captchaInput").addEventListener("input", function () {
+    this.value = this.value.toUpperCase();
+});
+
+document.getElementById("captchaInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        checkCaptcha();
+    }
+});
+
+function enterZone(zone) {
+    document.getElementById("zonePage").classList.add("hidden");
+    document.getElementById("seatPage").classList.remove("hidden");
+
+    document.getElementById("zoneTitle").innerText = zone + "구역";
+
+    initSeats(zone);
+}
+
+/* ================= 좌석 선택 ================= */
+const seatArea = document.getElementById("seatArea");
+const countText = document.getElementById("count");
+let selectedCount = 0;
+let maxSeat = 2;
+let isMouseDown = false;
+
+function initSeats(zone) {
+    seatArea.innerHTML = "";
+    selectedCount = 0;
+    countText.innerText = 0;
+
+    let seatCount = 0;
+
+    if (zone === "A") seatCount = 600;
+    if (zone === "B") seatCount = 500;
+    if (zone === "C") seatCount = 400;
+    if (zone === "D") seatCount = 300;
+
+    for (let i = 0; i < seatCount; i++) {
+        const seat = document.createElement("div");
+        seat.className = "seat";
+
+        if (Math.random() < 0.25) {
+            seat.classList.add("occupied");
+        }
+
+        seat.addEventListener("mousedown", () => selectSeat(seat));
+        seat.addEventListener("mouseover", () => {
+            if (isMouseDown) selectSeat(seat);
+        });
+
+        seatArea.appendChild(seat);
+    }
+}
+
+
+document.body.addEventListener("mousedown", () => isMouseDown = true);
+document.body.addEventListener("mouseup", () => isMouseDown = false);
+
+function selectSeat(seat) {
+    if (seat.classList.contains("occupied")) return;
+    if (seat.classList.contains("selected")) return;
+    if (selectedCount >= maxSeat) return;
+
+    seat.classList.add("selected");
+    selectedCount++;
+    countText.innerText = selectedCount;
+
+    if (selectedCount === maxSeat) {
+        setTimeout(() => alert("좌석 선택 완료! 🎉"), 100);
+    }
+}
+</script>
+</body>
+</html>
