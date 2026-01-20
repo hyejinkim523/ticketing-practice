@@ -26,18 +26,20 @@ body {
 }
 .seat-area {
     display: grid;
-    grid-template-columns: repeat(25, 28px);
-    gap: 4px;
+    grid-template-columns: repeat(40, 14px);
+    gap: 2px;
     justify-content: center;
     user-select: none;
 }
+
 .seat {
-    width: 30px;
-    height: 30px;
+    width: 14px;
+    height: 14px;
     background: #cce0ff;
     border: 1px solid #4a6fa5;
     cursor: pointer;
 }
+
 .seat.selected {
     background: #ff5b5b;
 }
@@ -165,8 +167,42 @@ button:disabled {
     <br>
     <div class="seat-area" id="seatArea"></div>
     <div class="center">
-        선택 좌석: <span id="count">0</span> / 2
-    </div>
+    선택 좌석: <span id="count">0</span> / 1
+</div>
+
+<div class="center">
+    <button id="confirmBtn" onclick="confirmSeat()" disabled>
+        선택 완료
+    </button>
+</div>
+
+</div>
+
+<!-- 결과 페이지 -->
+<div id="resultPage" class="hidden center">
+    <h2>예매 결과</h2>
+    <p>
+    ⏱️ 소요 시간:  
+    <strong><span id="resultTime"></span>초</strong>
+</p>
+
+<p>
+    🏅 이번 기록 순위:
+    <strong><span id="currentRank"></span>위</strong>
+</p>
+
+<p>
+    ⚡ 예매 시작 클릭 오차:
+    <strong><span id="clickDiff"></span>초</strong>
+</p>
+
+    <hr style="margin:20px 0;">
+
+    <h3>🏆 역대 최고 기록 TOP 10</h3>
+    <ol id="rankList"></ol>
+
+    <br>
+    <button onclick="location.reload()">다시 연습하기</button>
 </div>
 
 
@@ -179,21 +215,34 @@ const startBtn = document.getElementById("startBtn");
 const waitTimer = setInterval(() => {
     waitTime.innerText = wait;
 
-    if (wait < 0) {
-        clearInterval(waitTimer);
-        startBtn.disabled = false;
-        waitTime.innerText = 0;
-        return;
-    }
+if (wait < 0) {
+    clearInterval(waitTimer);
+    startBtn.disabled = false;
+    waitTime.innerText = 0;
 
+    openTime = performance.now(); // ⏱️ 버튼 오픈 시각 기록
+    return;
+}
     wait--;
 }, 1000);
 
+let openTime = 0;
+let clickTime = 0;
+let startTime = 0;
+let endTime = 0;
+
+
+
 startBtn.onclick = () => {
+    clickTime = performance.now(); // ⏱️ 클릭 시각
+    startTime = clickTime;         // 전체 소요 시간 시작점
     document.getElementById("waiting").classList.add("hidden");
     document.getElementById("captcha").classList.remove("hidden");
     generateCaptcha();
 };
+
+
+
 
 /* ================= 문자 입력 ================= */
 let captchaAnswer = "";
@@ -245,13 +294,14 @@ function enterZone(zone) {
 const seatArea = document.getElementById("seatArea");
 const countText = document.getElementById("count");
 let selectedCount = 0;
-let maxSeat = 2;
+let maxSeat = 1;
 let isMouseDown = false;
 
 function initSeats(zone) {
     seatArea.innerHTML = "";
     selectedCount = 0;
     countText.innerText = 0;
+    document.getElementById("confirmBtn").disabled = true;
 
     let seatCount = 0;
 
@@ -289,11 +339,65 @@ function selectSeat(seat) {
     seat.classList.add("selected");
     selectedCount++;
     countText.innerText = selectedCount;
-
-    if (selectedCount === maxSeat) {
-        setTimeout(() => alert("좌석 선택 완료! 🎉"), 100);
-    }
+    document.getElementById("confirmBtn").disabled = false;
 }
+
+function confirmSeat() {
+    if (selectedCount !== maxSeat) {
+        alert("좌석을 선택하세요.");
+        return;
+    }
+
+    endTime = performance.now();
+    const elapsed = Number(((endTime - startTime) / 1000).toFixed(2));
+
+    // 클릭 오차 계산
+    const diff = Number(((clickTime - openTime) / 1000).toFixed(3));
+
+    // 기록 저장
+    const records = saveRecord(elapsed);
+
+    // 화면 전환
+    document.getElementById("seatPage").classList.add("hidden");
+    document.getElementById("resultPage").classList.remove("hidden");
+
+
+// 결과 표시
+document.getElementById("resultTime").innerText = elapsed;
+
+document.getElementById("clickDiff").innerText =
+    diff >= 0 ? `+${diff}` : `조기 클릭 (${diff})`;
+
+renderRank(records, elapsed);
+
+}
+
+function saveRecord(time) {
+    let records = JSON.parse(localStorage.getItem("ticketRecords")) || [];
+
+    records.push(time);
+    records.sort((a, b) => a - b); // 빠른 순 정렬
+    records = records.slice(0, 10); // TOP 10만 유지
+
+    localStorage.setItem("ticketRecords", JSON.stringify(records));
+    return records;
+}
+
+function renderRank(records, currentTime) {
+    const rankList = document.getElementById("rankList");
+    rankList.innerHTML = "";
+
+    let currentRank = records.indexOf(currentTime) + 1;
+    document.getElementById("currentRank").innerText = currentRank;
+
+    records.forEach((time, index) => {
+        const li = document.createElement("li");
+        li.innerText = `${time}초`;
+        rankList.appendChild(li);
+    });
+}
+
+
 </script>
 </body>
 </html>
